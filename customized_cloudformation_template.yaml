@@ -1,0 +1,107 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Resources:
+  S3Bucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      AccessControl: PublicRead
+      BucketName: new-matthew-gibson-2022
+    DeletionPolicy: Retain
+  cloudfrontoai:
+    Type: AWS::CloudFront::CloudFrontOriginAccessIdentity
+    Properties:
+      CloudFrontOriginAccessIdentityConfig:
+        Comment: string-value	
+  myDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Origins:
+        - DomainName: 
+            Fn::Join:
+                - ''
+                - - 'new-matthew-gibson-2022'
+                  - '.s3.amazonaws.com'
+          Id: myS3Origin
+          S3OriginConfig: 
+            OriginAccessIdentity:
+              Fn::Join:
+                - ''
+                - - 'origin-access-identity/cloudfront/'
+                  - Ref: cloudfrontoai
+        Enabled: 'true'
+        DefaultCacheBehavior:
+          AllowedMethods:
+          - DELETE
+          - GET
+          - HEAD
+          - OPTIONS
+          - PATCH
+          - POST
+          - PUT
+          TargetOriginId: myS3Origin
+          ForwardedValues:
+            QueryString: 'false'
+            Cookies:
+              Forward: none
+          ViewerProtocolPolicy: allow-all
+        DefaultRootObject: index.html
+        ViewerCertificate:
+          CloudFrontDefaultCertificate: 'true'        
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      PolicyDocument:
+        Id: MyPolicy
+        Statement:
+          - Sid: AllowCloudFrontServicePrincipal
+            Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: s3:GetObject
+            Resource:
+              Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Ref: S3Bucket
+                  - /*
+            Condition:
+              StringEquals:
+                AWS:SourceArn:
+                  Fn::Join:
+                    - ''
+                    - - 'arn:aws:cloudfront::841538513560:distribution/'
+                      - Ref: myDistribution
+          - Sid: '2'
+            Effect: Allow
+            Principal:
+              AWS: 
+                Fn::Join:
+                  - ''
+                  - - 'arn:aws:iam::cloudfront:user/CloudFront Origin Access Identity '
+                    - Ref: cloudfrontoai
+            Action: s3:GetObject
+            Resource:
+              Fn::Join:
+                - ''
+                - - 'arn:aws:s3:::'
+                  - Ref: S3Bucket
+                  - /*
+      Bucket:
+        Ref: S3Bucket
+Outputs:
+  WebsiteURL:
+    Value:
+      Fn::GetAtt:
+        - S3Bucket
+        - WebsiteURL
+    Description: URL for website hosted on S3
+  S3BucketSecureURL:
+    Value:
+      Fn::Join:
+        - ''
+        - - https://
+          - Fn::GetAtt:
+              - S3Bucket
+              - DomainName
+    Description: Name of S3 bucket to hold website content
+
