@@ -24,9 +24,9 @@ Project 2:
   
   --------------------------------------------------------------------------------------------------
 Project 3:
-"Custom Browser for Parsing Websites"
+"Scrap.py"
 
-  Situation:
+  Situation: Custom Browser for Parsing Websites
   Task
   Action:
   Result:
